@@ -1,0 +1,29 @@
+
+{
+	"manifest_version": 3,
+	"name": "marzlevane",
+	"description": "a hydrocoptic marzlevane",
+	"version": "0.0.1",
+	"permissions": [
+		"contextMenus",
+		"scripting"
+	],
+	"host_permissions": [],
+	"background": {
+		"scripts": [
+			"background.js"
+		]
+	},
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"js": ["content.js"]
+		},
+		{
+			"matches": ["<all_urls>"],
+			"js": ["injected.js"],
+			"run_at": "document_start",
+			"world": "MAIN"
+		}
+	]
+}
