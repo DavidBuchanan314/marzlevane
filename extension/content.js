@@ -2,18 +2,22 @@
 
 // execution context: world.ISOLATED
 
-// received from background.js
+// receives from background.js, forwards to injected.js
 browser.runtime.onMessage.addListener((data, sender) => {
 	console.log("content.js: handling message!", data, sender);
 	
-	// received by handler.js in world.MAIN
+	// received by injected.js in world.MAIN
 	window.dispatchEvent(
 		new window.CustomEvent(
-			"marzlevaneContextMenuClickEvent", {
-				detail: {"blah": "my event!"}
-			}
+			"marzlevaneContextMenuClickEvent", { detail: data }
 		)
 	);
 
 	return Promise.resolve("done");
+});
+
+// receives from injected.js, forwards to background.js
+window.addEventListener("marzlevaneLogEvent", (event) => {
+	//console.log("temp log", event);
+	browser.runtime.sendMessage(event.detail);
 });

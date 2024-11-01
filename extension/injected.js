@@ -118,5 +118,12 @@
 		}
 
 		// TODO: something...
+		window.dispatchEvent(
+			new window.CustomEvent(
+				"marzlevaneLogEvent", {
+					detail: "some detail"
+				}
+			)
+		);
 	});
 })();
