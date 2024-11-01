@@ -2,25 +2,21 @@
 
 // execution context: world.MAIN
 
-/*window.addEventListener("myEvent", function(event) {
-	console.log("myEvent happened!", event);
-});*/
-
 (function(){
 	console.log("injected.js: hello I have been successfully injected");
 
-	function hook_proto(clazz, method_name, hook_impl) {
-		const orig_impl = clazz.prototype[method_name];
+	function hook(obj, method_name, hook_impl) {
+		const orig_impl = obj[method_name];
 
 		// can't use arrow syntax because we need "this"
-		clazz.prototype[method_name] = function() {
+		obj[method_name] = function() {
 			return hook_impl(this, orig_impl.bind(this), arguments);
 		}
 
 		// TODO: try to hide the hook from anyone doing introspection
 	}
 
-	hook_proto(window.MediaSource, "addSourceBuffer", (self, orig, [mimeType]) => {
+	hook(window.MediaSource.prototype, "addSourceBuffer", (self, orig, [mimeType]) => {
 		console.log("injected.js: hooked MediaSource.addSourceBuffer", mimeType);
 		let res = orig(mimeType);
 		console.log("injected.js: res", res);
@@ -32,36 +28,49 @@
 	});
 
 	// I think we can use this to determine when the video has ended
-	hook_proto(window.MediaSource, "endOfStream", (self, orig, [endOfStreamError]) => {
+	hook(window.MediaSource.prototype, "endOfStream", (self, orig, [endOfStreamError]) => {
 		console.log("injected.js: hooked MediaSource.endOfStream", endOfStreamError);
 		return orig(endOfStreamError);
 	});
 
-	hook_proto(window.MediaSource, "removeSourceBuffer", (self, orig, [sourceBuffer]) => {
+	hook(window.MediaSource.prototype, "removeSourceBuffer", (self, orig, [sourceBuffer]) => {
 		console.log("injected.js: hooked MediaSource.removeSourceBuffer", sourceBuffer._hook_mimeType, sourceBuffer);
 		return orig(sourceBuffer);
 	});
 
+	// pretend we don't support webm, for now
+	// (really, we should pretend to only support mp4)
+	hook(window.MediaSource, "isTypeSupported", (self, orig, [type]) => {
+		let mime = type.split(";")[0];
+		let res = orig(type);
+		if (mime == "video/webm" || mime == "audio/webm") {
+			res = false;
+		}
+		console.log("injected.js: hooked MediaSource.isTypeSupported", type, res);
+		return res
+	});
 
-	hook_proto(window.SourceBuffer, "appendBuffer", (self, orig, [source]) => {
+
+
+	hook(window.SourceBuffer.prototype, "appendBuffer", (self, orig, [source]) => {
 		console.log("injected.js: hooked SourceBuffer.appendBuffer", self._hook_mimeType, source);
 		return orig(source);
 	});
 
-	hook_proto(window.SourceBuffer, "abort", (self, orig) => {
+	hook(window.SourceBuffer.prototype, "abort", (self, orig) => {
 		console.log("injected.js: hooked SourceBuffer.abort", self._hook_mimeType);
 		// TODO: probably trigger the stream to get saved?
 		return orig();
 	});
 
-	hook_proto(window.SourceBuffer, "changeType", (self, orig, [type]) => {
+	hook(window.SourceBuffer.prototype, "changeType", (self, orig, [type]) => {
 		console.log("injected.js: hooked SourceBuffer.changeType", self._hook_mimeType, type);
 		self._hook_mimeType = type;
 		return orig(type);
 	});
 
 	// shouldn't need to hook this for functionality but nice to see logs anyway
-	hook_proto(window.SourceBuffer, "remove", (self, orig, [start, end]) => {
+	hook(window.SourceBuffer.prototype, "remove", (self, orig, [start, end]) => {
 		console.log("injected.js: hooked SourceBuffer.remove", self._hook_mimeType, start, end);
 		return orig(start, end);
 	});
@@ -76,15 +85,8 @@
 		mouse_y = event.clientY;
 	});
 
-	window.addEventListener("message", (event) => {
-		// TODO: security checks!!!!
-		
-		//console.log("world.MAIN received message", event, mouse_x, mouse_y);
-
-		if (event.data.type != "my_extension_context_click") {
-			return;
-		}
-
+	window.addEventListener("marzlevaneContextMenuClickEvent", (event) => {
+		console.log("world.MAIN received marzlevaneContextMenuClickEvent", event, mouse_x, mouse_y);
 		console.log("right click at", mouse_x, mouse_y);
 
 		const videos_under_mouse = [];
@@ -104,7 +106,17 @@
 		};
 
 		console.log("found videos:", videos_under_mouse);
-	});
 
-	// TODO: hook window.addEventListener("message", ...) to hide our messages from subsequently registered listeners
+		if (videos_under_mouse.length == 0) {
+			alert("Marzlevane Error: no video elements found (if the video hasn't started yet, try pressing play first)");
+			return;
+		}
+
+		if (videos_under_mouse.length > 1) {
+			alert("Marzlevane Error: too many video elements found! Not sure what to do...");
+			return;
+		}
+
+		// TODO: something...
+	});
 })();

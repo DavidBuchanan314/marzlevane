@@ -6,7 +6,7 @@ browser.contextMenus.create(
 		title: "Hydrocoptic Marzlevane",
 		contexts: ["all"], // TODO: do I really want "all"?
 	},
-	null,
+	null, // should be a callback
 );
 
 browser.contextMenus.onClicked.addListener((info, tab) => {
