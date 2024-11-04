@@ -1,0 +1,60 @@
+/*
+This CSS file aims to mimic the Firefox native UI styles
+
+TODO: support light mode
+*/
+
+body {
+	font-family: system-ui;
+	background-color: rgb(28, 27, 34);
+	color: rgb(251, 251, 254);
+	font-size: 15px;
+	margin: 1em 1.25em;
+}
+
+h1 {
+	font-size: 1.467rem;
+}
+
+h2 {
+	font-size: 1.133rem;
+}
+
+button {
+	background-color: color(srgb 0.984314 0.984314 0.996078 / 0.07);
+	color: inherit;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	box-sizing: border-box;
+	padding: .45em 1em;
+	margin-right: 0.5em; /* a bit of a hack for spacing multiple buttons... */
+	font-weight: 600;
+	font-size: 15px;
+	display: inline-block;
+}
+
+button:hover {
+	background-color: color(srgb 0.984314 0.984314 0.996078 / 0.14);
+}
+
+button:active {
+	background-color: color(srgb 0.984314 0.984314 0.996078 / 0.21);
+}
+
+button.primary {
+	background-color: rgb(0, 221, 255);
+	color: rgb(43, 42, 51);
+}
+
+button.primary:hover {
+	background-color: rgb(127, 238, 255);
+}
+
+button.primary:active {
+	background-color: rgb(182, 245, 255);
+}
+
+input[type=checkbox] {
+	/* todo: figure out how to style unchecked box */
+	accent-color: #00ddff;
+}
