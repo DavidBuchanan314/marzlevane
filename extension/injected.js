@@ -61,13 +61,22 @@
 
 
 	hook(window.SourceBuffer.prototype, "appendBuffer", (self, orig, [source]) => {
+		// source may be ArrayBuffer, TypedArray or DataView
 		console.log("injected.js: hooked SourceBuffer.appendBuffer", self._hook_mimeType, source);
-		const buf_blob = new Blob([source]);
-		const blob_uri = URL.createObjectURL(buf_blob); // TODO: don't leak blobs!
-		transmitEvent({
-			type: "appendBuffer",
-			data: blob_uri
-		});
+
+		// this is absurdly gross but it does work, effectively base64 encoding the buffer
+		// there are probably better ways of getting blobs into the background script, but idk what they are
+		var fr = new FileReader();
+		fr.onload = (e) => {
+			transmitEvent({
+				type: "appendBuffer",
+				// TODO: more metadata fields needed here!
+				blob_uri: e.target.result
+			});
+		};
+		fr.readAsDataURL(new Blob([source]));
+		
+		// feed the data into the real MSE api like nothing ever happened
 		return orig(source);
 	});
 

@@ -21,8 +21,7 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 browser.runtime.onMessage.addListener((data, sender) => {
-	console.log("received", data, sender);
-	// todo: some kind of switch case on data
+	//console.log("received", data, sender);
 
 	if (data.type === "foundVideoElement") {
 		let creating = browser.windows.create({
@@ -33,9 +32,6 @@ browser.runtime.onMessage.addListener((data, sender) => {
 		});
 	} else if (data.type === "appendBuffer") {
 		processAppendBuffer(data);
-		//blob = data.type.
-		//URL.revokeObjectURL(uri);
-		//console.log("appendBuffer", data);
 	} else {
 		console.log("unhandled event", data);
 	}
@@ -45,11 +41,9 @@ browser.runtime.onMessage.addListener((data, sender) => {
 
 async function processAppendBuffer(event)
 {
-	const uri = event.data;
-	const res = await fetch(uri); // TODO: consider security? validate that it's a blob URI?
-	// the above fails with permission error, I think we need to do this but in reverse: https://stackoverflow.com/a/23856573/4454877
+	const uri = event.blob_uri;
+	const res = await fetch(uri); // TODO: consider security? validate that it's a data URI?
 	const ab = await res.arrayBuffer();
-	URL.revokeObjectURL(uri); // prevent leaking blob uris
 	console.log("appendBuffer", ab);
 }
 
