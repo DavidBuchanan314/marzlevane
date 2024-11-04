@@ -9,7 +9,9 @@ browser.runtime.onMessage.addListener((data, sender) => {
 	// received by injected.js in world.MAIN
 	window.dispatchEvent(
 		new window.CustomEvent(
-			"marzlevaneContextMenuClickEvent", { detail: data }
+			"marzlevaneExtension2PageEvent", {
+				detail: cloneInto(data, window)
+			}
 		)
 	);
 
@@ -17,7 +19,7 @@ browser.runtime.onMessage.addListener((data, sender) => {
 });
 
 // receives from injected.js, forwards to background.js
-window.addEventListener("marzlevaneLogEvent", (event) => {
+window.addEventListener("marzlevanePage2ExtensionEvent", (event) => {
 	//console.log("temp log", event);
 	browser.runtime.sendMessage(event.detail);
 });

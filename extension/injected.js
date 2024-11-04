@@ -5,6 +5,14 @@
 (function(){
 	console.log("injected.js: hello I have been successfully injected");
 
+	function transmitEvent(msg) {
+		window.dispatchEvent(
+			new window.CustomEvent(
+				"marzlevanePage2ExtensionEvent", { detail: msg }
+			)
+		);
+	}
+
 	function hook(obj, method_name, hook_impl) {
 		const orig_impl = obj[method_name];
 
@@ -54,6 +62,12 @@
 
 	hook(window.SourceBuffer.prototype, "appendBuffer", (self, orig, [source]) => {
 		console.log("injected.js: hooked SourceBuffer.appendBuffer", self._hook_mimeType, source);
+		const buf_blob = new Blob([source]);
+		const blob_uri = URL.createObjectURL(buf_blob); // TODO: don't leak blobs!
+		transmitEvent({
+			type: "appendBuffer",
+			data: blob_uri
+		});
 		return orig(source);
 	});
 
@@ -85,8 +99,17 @@
 		mouse_y = event.clientY;
 	});
 
-	window.addEventListener("marzlevaneContextMenuClickEvent", (event) => {
-		console.log("world.MAIN received marzlevaneContextMenuClickEvent", event, mouse_x, mouse_y);
+	window.addEventListener("marzlevaneExtension2PageEvent", (event) => {
+		console.log("received", event);
+		if (event.detail.type === "contextMenuClicked") {
+			contextMenuClicked();
+		} else {
+			console.log("unhandled marzlevaneExtension2PageEvent", event);
+		}
+	});
+
+	function contextMenuClicked() {
+		console.log("world.MAIN received marzlevaneContextMenuClickEvent", mouse_x, mouse_y);
 		console.log("right click at", mouse_x, mouse_y);
 
 		const videos_under_mouse = [];
@@ -118,12 +141,9 @@
 		}
 
 		// TODO: something...
-		window.dispatchEvent(
-			new window.CustomEvent(
-				"marzlevaneLogEvent", {
-					detail: "some detail"
-				}
-			)
-		);
-	});
+		transmitEvent({
+			type: "foundVideoElement"
+		});
+	}
+
 })();

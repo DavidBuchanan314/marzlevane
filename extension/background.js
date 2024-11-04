@@ -23,15 +23,43 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
 browser.runtime.onMessage.addListener((data, sender) => {
 	console.log("received", data, sender);
 	// todo: some kind of switch case on data
+
+	if (data.type === "foundVideoElement") {
+		let creating = browser.windows.create({
+			type: "popup",
+			url: "ui/panel.html",
+			width: 640,
+			height: 480,
+		});
+	} else if (data.type === "appendBuffer") {
+		processAppendBuffer(data);
+		//blob = data.type.
+		//URL.revokeObjectURL(uri);
+		//console.log("appendBuffer", data);
+	} else {
+		console.log("unhandled event", data);
+	}
+
+	
 });
 
-let cleanup_handlers = {}
+async function processAppendBuffer(event)
+{
+	const uri = event.data;
+	const res = await fetch(uri); // TODO: consider security? validate that it's a blob URI?
+	// the above fails with permission error, I think we need to do this but in reverse: https://stackoverflow.com/a/23856573/4454877
+	const ab = await res.arrayBuffer();
+	URL.revokeObjectURL(uri); // prevent leaking blob uris
+	console.log("appendBuffer", ab);
+}
+
+let download_cleanup_handlers = {}
 browser.downloads.onChanged.addListener((delta) => {
 	console.log("delta", delta);
 	let state = delta.state.current;
 	if (state === "complete" || state === "interrupted") {
-		if (cleanup_handlers[delta.id] !== undefined) {
-			cleanup_handlers[delta.id](); // handler should remove itself from cleanup_handlers!
+		if (download_cleanup_handlers[delta.id] !== undefined) {
+			download_cleanup_handlers[delta.id](); // handler should remove itself from cleanup_handlers!
 		}
 	}
 })
@@ -40,7 +68,7 @@ browser.downloads.onChanged.addListener((delta) => {
 async function streamed_download(file_name, writer_callback) {
 	const root = await navigator.storage.getDirectory();
 	const temp_path = crypto.randomUUID() + ".tmp";
-	const handle = await root.getFileHandle(temp_path, { create: true }); // TODO: generate filename uuid
+	const handle = await root.getFileHandle(temp_path, { create: true });
 	const writable = await handle.createWritable();
 	await writer_callback(writable);
 	await writable.close();
@@ -59,13 +87,13 @@ async function streamed_download(file_name, writer_callback) {
 		filename: file_name
 	});
 
-	// XXX: is there a download_id race condition here???
+	// XXX: is there a race condition here??? could the download complete before re register our handler?
 
-	cleanup_handlers[download_id] = async function() {
+	download_cleanup_handlers[download_id] = async function() {
 		console.log("download looks complete, cleaning up");
 		URL.revokeObjectURL(uri);
 		await root.removeEntry(temp_path);
-		delete cleanup_handlers[download_id];
+		delete download_cleanup_handlers[download_id];
 		resolver();
 	};
 
